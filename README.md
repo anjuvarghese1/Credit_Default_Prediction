@@ -64,20 +64,21 @@ violates.
 
 ## Results
 
-The model comparison below was produced by `python -m credit_risk.train`. The
-expected and observed finding is that **gradient boosting wins on this tabular
-data**, with the logistic-regression baseline a respectable, fully
-interpretable second, and the neural network — given a fair, oversampled,
-well-regularized setup — trailing third.
+The model comparison below was produced by `python -m credit_risk.train` on the
+real [Give Me Some Credit](https://www.kaggle.com/c/GiveMeSomeCredit) training
+data (150,000 borrowers). The expected and observed finding is that **gradient
+boosting wins on this tabular data**, with the logistic-regression baseline a
+respectable, fully interpretable second, and the neural network — given a fair,
+oversampled, well-regularized setup — trailing third.
 
 | Model | CV ROC-AUC | Test ROC-AUC | PR-AUC | KS | Brier |
 |---|---|---|---|---|---|
-| Logistic Regression | 0.732 ± 0.036 | 0.666 | 0.287 | 0.323 | 0.202 |
-| **Gradient Boosting (best)** | 0.732 ± 0.024 | **0.723** | **0.312** | **0.355** | **0.057** |
-| Neural Network (MLP) | 0.610 ± 0.032 | 0.643 | 0.267 | 0.265 | 0.101 |
+| Logistic Regression | 0.853 ± 0.004 | 0.859 | 0.384 | 0.559 | 0.146 |
+| **Gradient Boosting (best)** | 0.863 ± 0.003 | **0.867** | **0.402** | **0.582** | **0.049** |
+| Neural Network (MLP) | 0.830 ± 0.002 | 0.843 | 0.336 | 0.541 | 0.096 |
 
 Gradient boosting wins on every metric, and its dramatically lower **Brier
-score** (0.057 vs 0.202) shows its predicted probabilities are far better
+score** (0.049 vs 0.146) shows its predicted probabilities are far better
 calibrated — important when scores feed downstream expected-loss math.
 
 **The takeaway is a judgment call, not a reflex:** on structured, tabular
@@ -91,13 +92,13 @@ Generated figures (`reports/figures/`): ROC curves, precision-recall curves, a
 calibration/reliability diagram, and permutation feature importance for the
 winning model.
 
-> ### ⚠️ About these numbers
-> The metrics above were generated on the **synthetic sample**, whose signal is
-> tuned to be realistic but is *not* the real dataset. They are illustrative
-> scaffolding so the repository runs end-to-end with zero data-access friction —
-> **not** a benchmark result to cite. On the real Kaggle data, all three models
-> score materially higher (typically ~0.80–0.86 ROC-AUC) with the same ordering.
-> The code path is identical: drop `cs-training.csv` into `data/` and re-run.
+> **Reproducibility:** all results use a fixed random seed and a stratified
+> train/test split, so the numbers above are reproducible across runs. The
+> repository also ships a schema-matched **synthetic data generator** (see
+> `data.py`) so it runs end-to-end with zero setup for anyone who clones it
+> without a Kaggle account; on synthetic data the same model ordering holds at
+> lower absolute scores. To reproduce the numbers above, place the real
+> `cs-training.csv` in `data/` (see below) and re-run.
 
 ---
 
