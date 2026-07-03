@@ -1,21 +1,4 @@
-"""End-to-end training and benchmarking orchestrator.
-
-Run as a module::
-
-    python -m credit_risk.train
-
-Steps
------
-1. Load data (real Kaggle file if present, else schema-matched sample).
-2. Stratified train/test split (preserves the ~7% default rate).
-3. For each model: stratified k-fold CV on the training split (reports mean
-   ROC-AUC +/- std) -- preprocessing is re-fit inside every fold, so there is
-   no leakage.
-4. Refit each model on the full training split; score the held-out test split.
-5. Compute the credit-risk metric suite, render comparison plots, and compute
-   permutation importance for the best model.
-6. Persist the best pipeline to ``models/`` and write a Markdown report.
-"""
+# run as a modlue: python -m credit_risk.train
 
 from __future__ import annotations
 
@@ -54,18 +37,17 @@ logger = logging.getLogger(__name__)
 N_CV_FOLDS = 5
 DECISION_THRESHOLD = 0.5
 
-
-def run(cv_folds: int = N_CV_FOLDS) -> dict[str, EvaluationResult]:
-    """Execute the full benchmark and return per-model evaluation results."""
+# Execute the full benchmark and return per-model evaluation results
+def run(cv_folds: int = N_CV_FOLDS) -> dict[str, EvaluationResult]:    
     ensure_dirs()
 
-    # ---- 1. Load -------------------------------------------------------- #
+    # load data
     df = load_raw_data()
     X = df[SCHEMA.feature_columns]
     y = df[SCHEMA.target].to_numpy()
     logger.info("Loaded %d rows; default rate = %.3f", len(df), y.mean())
 
-    # ---- 2. Split ------------------------------------------------------- #
+    # train test split
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -84,10 +66,7 @@ def run(cv_folds: int = N_CV_FOLDS) -> dict[str, EvaluationResult]:
     cv_scores: dict[str, tuple[float, float]] = {}
     scored: dict[str, tuple[np.ndarray, np.ndarray]] = {}
 
-    # ---- 3-4. CV, refit, score ----------------------------------------- #
-    # Models that are cheap to train get the full fold count; the MLP, which
-    # dominates runtime, uses a smaller fold count from config. This keeps the
-    # benchmark fast without affecting any held-out test score.
+    # cross validation, refit, score
     mlp_folds = getattr(MODELS, "mlp_cv_folds", cv_folds)
     for name, pipe in models.items():
         n_folds = mlp_folds if "MLP" in name else cv_folds
@@ -112,12 +91,12 @@ def run(cv_folds: int = N_CV_FOLDS) -> dict[str, EvaluationResult]:
             result.roc_auc, result.average_precision, result.ks_statistic,
         )
 
-    # ---- 5. Plots ------------------------------------------------------- #
+    # plots
     roc_path = plot_roc_curves(scored)
     pr_path = plot_pr_curves(scored)
     cal_path = plot_calibration(scored)
 
-    # Pick the best model by held-out ROC-AUC.
+     # best model by ROC-AUC
     best_name = max(results, key=lambda n: results[n].roc_auc)
     logger.info("Best model by test ROC-AUC: %s", best_name)
 
@@ -132,7 +111,7 @@ def run(cv_folds: int = N_CV_FOLDS) -> dict[str, EvaluationResult]:
         title=f"Permutation Importance -- {best_name}",
     )
 
-    # ---- 6. Persist + report ------------------------------------------- #
+    # report
     model_path = MODELS_DIR / "best_model.joblib"
     joblib.dump(best_pipe, model_path)
     logger.info("Saved best model -> %s", model_path)
@@ -163,7 +142,7 @@ def _dump_metrics(
     cv_scores: dict[str, tuple[float, float]],
     best_name: str,
 ) -> None:
-    """Write a machine-readable metrics summary."""
+    # metrics summary
     payload = {
         "best_model": best_name,
         "models": {
