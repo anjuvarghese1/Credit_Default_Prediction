@@ -149,7 +149,7 @@ PYTHONPATH=src python -m pytest tests/ -q
 
 ---
 
-## The "premium" model stack (optional)
+## The advanced model stack (optional)
 
 The pipeline is sklearn-native so it installs and runs with no heavy
 dependencies. The two complex models are written so that
