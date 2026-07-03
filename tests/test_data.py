@@ -1,4 +1,4 @@
-"""Tests for the data ingestion and synthetic-generation layer."""
+# tests for the data ingestion and synthetic-generation layer
 
 from __future__ import annotations
 
@@ -8,18 +8,16 @@ import pandas as pd
 from credit_risk.config import DELINQUENCY_VOIDS, SCHEMA
 from credit_risk.data import generate_synthetic_sample, load_raw_data
 
-
+# ensure no surprise columns
 def test_synthetic_sample_has_expected_schema():
-    df = generate_synthetic_sample(n_rows=1_000, random_state=0)
-    # Target first, then all features, no surprise columns.
+    df = generate_synthetic_sample(n_rows=1_000, random_state=0)    
     assert list(df.columns) == SCHEMA.all_columns
     assert df.shape[0] == 1_000
 
 
 def test_synthetic_default_rate_is_calibrated():
     df = generate_synthetic_sample(n_rows=10_000, default_rate=0.07, random_state=0)
-    rate = df[SCHEMA.target].mean()
-    # The intercept solver should land close to the requested prevalence.
+    rate = df[SCHEMA.target].mean()    
     assert 0.05 < rate < 0.09
 
 
@@ -41,14 +39,11 @@ def test_synthetic_injects_sentinels():
 
 
 def test_synthetic_has_outliers():
-    df = generate_synthetic_sample(n_rows=10_000, random_state=0)
-    # Heavy right tail: utilization should contain implausible >1 values.
+    df = generate_synthetic_sample(n_rows=10_000, random_state=0)    
     assert df["RevolvingUtilizationOfUnsecuredLines"].max() > 1.0
 
 
-def test_load_raw_data_falls_back_to_synthetic(tmp_path, monkeypatch):
-    # Point the loader at a non-existent file; it must generate a sample
-    # rather than raise, and still satisfy the schema.
+def test_load_raw_data_falls_back_to_synthetic(tmp_path, monkeypatch):    
     import credit_risk.data as data_mod
 
     fake = tmp_path / "does_not_exist.csv"
@@ -57,8 +52,7 @@ def test_load_raw_data_falls_back_to_synthetic(tmp_path, monkeypatch):
     assert SCHEMA.id_col not in df.columns  # id column dropped if present
 
 
-def test_load_raw_data_reads_real_csv(tmp_path):
-    # A CSV that exists should be read as-is (id column dropped).
+def test_load_raw_data_reads_real_csv(tmp_path):    
     import credit_risk.data as data_mod
 
     df_src = generate_synthetic_sample(n_rows=200, random_state=1)
