@@ -32,7 +32,7 @@ def test_synthetic_injects_missing_values():
 def test_synthetic_injects_sentinels():
     df = generate_synthetic_sample(n_rows=20_000, random_state=0)
     found = (
-        df[list(SCHEMA.delinquency_counts)]
+        df[list(SCHEMA.delinquency_days)]
         .isin(list(DELINQUENCY_VOIDS))
         .to_numpy()
         .any()
