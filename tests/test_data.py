@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from credit_risk.config import DELINQUENCY_SENTINELS, SCHEMA
+from credit_risk.config import DELINQUENCY_VOIDS, SCHEMA
 from credit_risk.data import generate_synthetic_sample, load_raw_data
 
 
@@ -33,7 +33,7 @@ def test_synthetic_injects_sentinels():
     df = generate_synthetic_sample(n_rows=20_000, random_state=0)
     found = (
         df[list(SCHEMA.delinquency_counts)]
-        .isin(list(DELINQUENCY_SENTINELS))
+        .isin(list(DELINQUENCY_VOIDS))
         .to_numpy()
         .any()
     )
