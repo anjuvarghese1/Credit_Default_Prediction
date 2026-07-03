@@ -1,4 +1,4 @@
-"""Tests for the preprocessing layer and custom transformers."""
+# tests for the preprocessing layer and custom transformers
 
 from __future__ import annotations
 
@@ -53,10 +53,7 @@ def test_output_feature_names_match_width():
     assert Xt.shape[1] == len(get_output_feature_names())
 
 
-def test_no_leakage_train_bounds_applied_to_test():
-    # The capper must learn bounds on TRAIN and apply them to TEST unchanged,
-    # not re-fit on test. We verify by checking that a transformer fitted on a
-    # low-valued train set caps a high-valued test row to the train bound.
+def test_no_leakage_train_bounds_applied_to_test():    
     train = pd.DataFrame({"a": np.arange(0, 100, dtype=float)})
     test = pd.DataFrame({"a": [10_000.0]})
     capper = OutlierCapper(upper_quantile=0.99)
