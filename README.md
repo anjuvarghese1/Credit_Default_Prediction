@@ -1,7 +1,7 @@
 # Defensible Credit Default Prediction Pipeline
 
 A modular, production-oriented machine-learning pipeline that ingests messy
-borrower data, cleans it through a **leakage-safe** preprocessing stack, and
+borrower data, cleans it through a customized preprocessing stack, and
 benchmarks an interpretable baseline against more complex models under the
 metrics a credit-risk audience actually uses.
 
@@ -49,7 +49,7 @@ The design separates concerns so each layer is independently testable:
 | Evaluation | `evaluate.py` | Credit-risk metric suite (ROC-AUC, PR-AUC, KS, Brier). |
 | Reporting | `plots.py`, `report.py`, `train.py` | Figures, Markdown report, JSON metrics, persisted best model. |
 
-### Why the preprocessing is "leakage-safe"
+### Customized pre-processing
 
 Every cleaning step — median imputation values, the winsorization bounds, the
 scaler's mean/variance — is a **fitted parameter learned on the training split
