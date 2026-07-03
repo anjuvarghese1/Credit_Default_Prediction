@@ -31,7 +31,7 @@ class Schema:
       'NumberRealEstateLoansOrLines',
       'NumberOfDependents',
   )
-  delinquency_days: tuple[str, ...] = (     # contains 96/98 - no history/closed ccount, special handling
+  delinquency_days: tuple[str, ...] = (     # contains 96/98 - no history/closed account, special handling
       'NumberOfTime30-59DaysPastDueNotWorse',
       'NumberOfTimes90DaysLate',
       'NumberOfTime60-89DaysPastDueNotWorse'
@@ -51,8 +51,8 @@ class Schema:
 
 SCHEMA = Schema()
 
-delinquency_voids: tuple[int, ...] = (96,98)
-delinquency_bar: int = 20
+DELINQUENCY_VOIDS: tuple[int, ...] = (96,98)
+DELINQUENCY_CAP: int = 20
 
 # training | evaluation
 @dataclass(frozen=True)
