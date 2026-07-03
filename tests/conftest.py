@@ -1,4 +1,4 @@
-"""Pytest configuration: make the ``src`` layout importable in tests."""
+# Pytest configuration: make src layout importable in tests
 
 import sys
 from pathlib import Path
