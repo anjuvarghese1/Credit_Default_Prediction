@@ -1,41 +1,3 @@
-"""Model definitions for the credit-default benchmark.
-
-Three estimators span the interpretability/complexity spectrum:
-
-1. **Logistic Regression** -- the interpretable, regulator-friendly baseline.
-   Coefficients map to log-odds; this is the kind of model a model-risk team
-   can validate and explain. ``class_weight="balanced"`` counteracts the ~7%
-   default rate.
-2. **Histogram Gradient Boosting** -- a strong tabular learner and the model
-   expected to win on this kind of structured financial data. sklearn-native
-   so the repo runs with zero extra dependencies; see the swap-in note below
-   to substitute XGBoost or LightGBM.
-3. **Multilayer Perceptron** -- the "complex" neural model, included to test
-   (and, on tabular data, usually disprove) the assumption that deep learning
-   automatically wins.
-
-Each model is returned as a full :class:`~sklearn.pipeline.Pipeline` whose
-first step is the shared preprocessor, so cross-validation and evaluation
-re-fit preprocessing inside every fold -- no leakage.
-
-Swap-in note (premium stack)
-----------------------------
-To use gradient-boosting libraries that typically edge out the sklearn
-implementation, install ``xgboost`` (or ``lightgbm``) and replace the
-estimator in :func:`build_gradient_boosting` -- e.g.::
-
-    from xgboost import XGBClassifier            # swap-in
-    estimator = XGBClassifier(
-        n_estimators=400, learning_rate=0.05, max_depth=4,
-        subsample=0.9, colsample_bytree=0.9,
-        eval_metric="auc", random_state=cfg.random_state,
-    )
-
-For a PyTorch MLP, wrap a small ``nn.Module`` in skorch's
-``NeuralNetClassifier`` so it stays Pipeline-compatible. The rest of the
-pipeline, metrics, and reporting are unchanged.
-"""
-
 from __future__ import annotations
 
 import numpy as np
@@ -51,28 +13,13 @@ from .preprocessing import build_preprocessor
 
 
 class OversampledClassifier(BaseEstimator, ClassifierMixin):
-    """Wrap a classifier with random minority oversampling at fit time.
-
-    Some learners (notably the MLP here) lack a ``class_weight`` option and
-    fit poorly on a 7%-positive problem. This wrapper random-oversamples the
-    minority class up to parity **on the training data only**, then delegates
-    to the wrapped estimator. ``predict`` / ``predict_proba`` are unchanged, so
-    the wrapper drops cleanly into a Pipeline and into cross-validation (test
-    folds are never resampled).
-
-    Using a small custom wrapper keeps the project dependency-free; in
-    production one would typically reach for ``imbalanced-learn`` instead.
-    """
-
     def __init__(
         self, estimator, sampling_ratio: float = 1.0, random_state: int = 42
     ) -> None:
         self.estimator = estimator
         self.sampling_ratio = sampling_ratio
         self.random_state = random_state
-
-    # Ensure sklearn (and Pipeline) treats this wrapper as a classifier so
-    # that predict_proba-based scorers (e.g. roc_auc) resolve correctly.
+    
     _estimator_type = "classifier"
 
     def __sklearn_tags__(self):
@@ -84,10 +31,7 @@ class OversampledClassifier(BaseEstimator, ClassifierMixin):
         X = np.asarray(X)
         y = np.asarray(y)
         classes, counts = np.unique(y, return_counts=True)
-        majority = counts.max()
-        # Oversample each minority class up to `sampling_ratio` * majority
-        # (ratio=1.0 -> full parity). A partial ratio is often enough and is
-        # much cheaper to train.
+        majority = counts.max()        
         target = max(int(round(majority * self.sampling_ratio)), int(counts.min()))
 
         idx_parts: list[np.ndarray] = []
@@ -122,19 +66,13 @@ def build_logistic_regression(cfg: ModelConfig = MODELS) -> Pipeline:
     estimator = LogisticRegression(
         C=cfg.logreg_C,
         max_iter=cfg.logreg_max_iter,
-        class_weight="balanced",  # offset class imbalance
+        class_weight="balanced",               # offset class imbalance
         random_state=cfg.random_state,
     )
     return _wrap(estimator)
 
 
-def build_gradient_boosting(cfg: ModelConfig = MODELS) -> Pipeline:
-    """Strong tabular learner: histogram-based gradient boosting.
-
-    ``HistGradientBoostingClassifier`` is sklearn's high-performance boosting
-    implementation (similar in spirit to LightGBM). It handles the residual
-    structure of credit data well and is the expected top performer here.
-    """
+def build_gradient_boosting(cfg: ModelConfig = MODELS) -> Pipeline:    
     estimator = HistGradientBoostingClassifier(
         max_iter=cfg.hgb_max_iter,
         learning_rate=cfg.hgb_learning_rate,
@@ -143,20 +81,11 @@ def build_gradient_boosting(cfg: ModelConfig = MODELS) -> Pipeline:
         early_stopping=cfg.hgb_early_stopping,
         random_state=cfg.random_state,
     )
-    # --- swap-in: from xgboost import XGBClassifier; estimator = XGBClassifier(...)
+    # swap-in: from xgboost import XGBClassifier; estimator = XGBClassifier(...)
     return _wrap(estimator)
 
 
-def build_mlp(cfg: ModelConfig = MODELS) -> Pipeline:
-    """The 'complex' model: a multilayer perceptron classifier.
-
-    The MLP has no ``class_weight`` and is sensitive to the heavy class
-    imbalance, so it is wrapped in :class:`OversampledClassifier` (minority
-    oversampling at fit time only) and uses an adaptive learning rate without
-    sklearn's internal early stopping, which terminates prematurely on
-    imbalanced validation folds. Even with a fair setup it is expected to
-    trail gradient boosting on this tabular signal.
-    """
+def build_mlp(cfg: ModelConfig = MODELS) -> Pipeline:    
     estimator = MLPClassifier(
         hidden_layer_sizes=cfg.mlp_hidden_layer_sizes,
         alpha=cfg.mlp_alpha,
@@ -167,7 +96,7 @@ def build_mlp(cfg: ModelConfig = MODELS) -> Pipeline:
         n_iter_no_change=cfg.mlp_n_iter_no_change,
         random_state=cfg.random_state,
     )
-    # --- swap-in: a PyTorch nn.Module wrapped via skorch.NeuralNetClassifier
+    # swap-in: a PyTorch nn.Module wrapped via skorch.NeuralNetClassifier
     wrapped = OversampledClassifier(
         estimator, sampling_ratio=cfg.mlp_sampling_ratio,
         random_state=cfg.random_state,
@@ -175,8 +104,7 @@ def build_mlp(cfg: ModelConfig = MODELS) -> Pipeline:
     return _wrap(wrapped)
 
 
-def _wrap(estimator) -> Pipeline:
-    """Compose the shared preprocessor with a final estimator."""
+def _wrap(estimator) -> Pipeline:    
     return Pipeline(
         steps=[
             ("preprocess", build_preprocessor()),
@@ -185,8 +113,7 @@ def _wrap(estimator) -> Pipeline:
     )
 
 
-def build_all_models(cfg: ModelConfig = MODELS) -> dict[str, Pipeline]:
-    """Return the full benchmark suite keyed by human-readable model name."""
+def build_all_models(cfg: ModelConfig = MODELS) -> dict[str, Pipeline]:    
     return {
         "Logistic Regression": build_logistic_regression(cfg),
         "Gradient Boosting": build_gradient_boosting(cfg),
