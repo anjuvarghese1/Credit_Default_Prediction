@@ -1,17 +1,9 @@
-"""Plotting utilities for model comparison and diagnostics.
-
-All figures are written to ``reports/figures`` as PNGs and are referenced from
-the generated report. Matplotlib is used with a non-interactive backend so the
-pipeline runs headless (CI, containers) without a display.
-"""
-
 from __future__ import annotations
 
 from pathlib import Path
 
 import matplotlib
-
-matplotlib.use("Agg")  # headless backend; must precede pyplot import
+matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.calibration import calibration_curve
@@ -23,14 +15,7 @@ from .config import FIGURES_DIR
 def plot_roc_curves(
     scored: dict[str, tuple[np.ndarray, np.ndarray]],
     out_path: Path | None = None,
-) -> Path:
-    """Overlay ROC curves for every model.
-
-    Parameters
-    ----------
-    scored:
-        Mapping of model name -> (y_true, y_score).
-    """
+) -> Path:    
     out_path = out_path or (FIGURES_DIR / "roc_curves.png")
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
     for name, (y_true, y_score) in scored.items():
@@ -51,8 +36,7 @@ def plot_roc_curves(
 def plot_pr_curves(
     scored: dict[str, tuple[np.ndarray, np.ndarray]],
     out_path: Path | None = None,
-) -> Path:
-    """Overlay precision-recall curves (the right view under imbalance)."""
+) -> Path:    
     out_path = out_path or (FIGURES_DIR / "pr_curves.png")
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
     for name, (y_true, y_score) in scored.items():
@@ -78,7 +62,7 @@ def plot_calibration(
     out_path: Path | None = None,
     n_bins: int = 10,
 ) -> Path:
-    """Reliability diagram: predicted vs. observed default frequency."""
+    # reliability diagram: predicted vs. observed default frequency
     out_path = out_path or (FIGURES_DIR / "calibration.png")
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
     for name, (y_true, y_score) in scored.items():
@@ -103,7 +87,7 @@ def plot_permutation_importance(
     out_path: Path | None = None,
     title: str = "Permutation Importance",
 ) -> Path:
-    """Horizontal bar chart of feature importances (sorted)."""
+    # horizontal bar chart of feature importances (sorted)
     out_path = out_path or (FIGURES_DIR / "feature_importance.png")
     order = np.argsort(importances)
     names_sorted = [feature_names[i] for i in order]
