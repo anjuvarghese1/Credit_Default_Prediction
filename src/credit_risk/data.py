@@ -130,7 +130,7 @@ rng = np.random.default_rng(random_state)
     df = _inject_defects(df, rng)
     return df[SCHEMA.all_columns]
 
-# sum of delinquency counts
+# sum of delinquency days
 def any_dpd_smooth(*cols: np.ndarray) -> np.ndarray:
     total = np.zeros_like(cols[0], dtype=float)
     for c in cols:
