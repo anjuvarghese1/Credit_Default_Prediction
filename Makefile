@@ -1,4 +1,4 @@
-# Convenience targets. Run `make help` for the list.
+# convenience targets
 
 .PHONY: help install train test docker-build docker-run clean
 
