@@ -1,4 +1,4 @@
-"""Tests for model construction and the evaluation metric suite."""
+# tests for model construction and the evaluation metric suite
 
 from __future__ import annotations
 
@@ -40,10 +40,6 @@ def test_each_model_fits_and_predicts_proba():
 
 
 def test_oversampler_balances_classes_at_fit():
-    # The wrapper should expose classifier behavior and fit without error on
-    # an imbalanced target. Use clean numeric data: the oversampler is
-    # designed to sit *after* preprocessing, so here we feed it imputed,
-    # finite features to test it in isolation.
     from sklearn.linear_model import LogisticRegression
 
     rng = np.random.default_rng(0)
