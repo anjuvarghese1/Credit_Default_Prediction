@@ -1,10 +1,3 @@
-"""Markdown report generation for the benchmark run.
-
-Produces ``reports/report.md`` summarizing the dataset, the model comparison
-(CV and held-out metrics), and the diagnostic figures, with a short
-interpretation of why the winning model wins on tabular credit data.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -25,8 +18,7 @@ def write_report(
     n_test: int,
     default_rate: float,
     out_path: Path | None = None,
-) -> Path:
-    """Render the benchmark report to Markdown and return its path."""
+) -> Path:    
     out_path = out_path or (REPORTS_DIR / "report.md")
 
     lines: list[str] = []
@@ -37,7 +29,7 @@ def write_report(
         "cross-validation.\n"
     )
 
-    # Dataset section
+    # dataset section
     lines.append("## Dataset\n")
     lines.append(
         f"- Training rows: **{n_train:,}**  \n"
@@ -51,7 +43,7 @@ def write_report(
         "instead.\n"
     )
 
-    # Results table
+    # results table
     lines.append("## Model Comparison\n")
     lines.append(
         "| Model | CV ROC-AUC | Test ROC-AUC | PR-AUC | KS | Brier |\n"
@@ -72,7 +64,7 @@ def write_report(
         "calibration (lower is better)._\n"
     )
 
-    # Interpretation
+    # interpretation
     lines.append("## Interpretation\n")
     lines.append(
         f"On this structured, tabular dataset the **{best_name}** model gives "
@@ -87,7 +79,7 @@ def write_report(
         "interpretability is a regulatory requirement.\n"
     )
 
-    # Figures
+    # figures
     lines.append("## Figures\n")
     rel = lambda p: _relative(p, out_path.parent)  # noqa: E731
     lines.append(f"### ROC Curves\n\n![ROC curves]({rel(figures['roc'])})\n")
@@ -106,9 +98,7 @@ def write_report(
     logger.info("Saved report -> %s", out_path)
     return out_path
 
-
-def _relative(target: Path, start: Path) -> str:
-    """Return a POSIX relative path for embedding in Markdown."""
+def _relative(target: Path, start: Path) -> str:    
     try:
         return target.relative_to(start).as_posix()
     except ValueError:
