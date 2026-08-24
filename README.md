@@ -252,6 +252,8 @@ imputation, winsorization, and scaling all apply exactly as they did in
 training. **Mangum** adapts the ASGI app to Lambda's invocation model, so the
 identical code runs locally under Uvicorn and in the cloud under Lambda.
 
+![Interactive OpenAPI documentation](docs/api-docs.png)
+
 ### Example request
 
 ```bash
@@ -276,6 +278,8 @@ curl -X POST "$API_URL/predict" \
 A low-risk applicant (low utilization, older, no delinquencies) returns a
 probability near `0.03`; the high-risk profile above returns `~0.60`. The
 interactive OpenAPI docs are served at `/docs`.
+
+![Live predictions from the deployed API — high-risk (0.60) vs low-risk (0.03) applicant](docs/demo-predictions.png)
 
 ### Infrastructure as Code (Terraform)
 
@@ -310,6 +314,8 @@ Lambda update on this project's specific resources, nothing else in the
 account. This is the keyless pattern that replaces stored access keys, and it
 eliminates the leaked-credential risk entirely.
 
+
+![Container image stored in Amazon ECR](docs/ecr-registry.png)
 
 ### Serving stack
 
