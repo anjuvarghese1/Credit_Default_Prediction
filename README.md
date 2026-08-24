@@ -208,19 +208,15 @@ credit-risk-pipeline/
 - **A small custom oversampling wrapper** keeps the project dependency-free; in
   production one would typically reach for `imbalanced-learn`.
 
-## License
-
-MIT â€” see [LICENSE](LICENSE).
----
-
 ## Deployment: serverless inference on AWS
 
 The trained pipeline is deployed as a **serverless REST API** on AWS. The same
 `best_model.joblib` produced by the training run is served behind an HTTP
-endpoint that scores a single applicant on demand — with no server to manage
+endpoint that scores a single applicant on demand ï¿½ with no server to manage
 and no idle cost, since the compute scales to zero between requests.
 
-### Architecture       
+### Architecture  
+```     
                 HTTPS request (JSON applicant)
                           |
                           v
@@ -240,6 +236,7 @@ and no idle cost, since the compute scales to zero between requests.
                 +------------------+
                 |   Amazon ECR     |   private container registry
                 +------------------+
+```
 
 A thin **FastAPI** application (`app.py`) wraps the model, exposing two routes:
 
@@ -250,9 +247,9 @@ A thin **FastAPI** application (`app.py`) wraps the model, exposing two routes:
 
 Because the persisted artifact is a full sklearn `Pipeline`, the same
 leakage-safe preprocessing described above travels *with* the model into
-production — the API hands raw applicant fields straight to the pipeline, and
+production ï¿½ the API hands raw applicant fields straight to the pipeline, and
 imputation, winsorization, and scaling all apply exactly as they did in
-training. **Mangum** adapts the ASGI app to Lambda''s invocation model, so the
+training. **Mangum** adapts the ASGI app to Lambda's invocation model, so the
 identical code runs locally under Uvicorn and in the cloud under Lambda.
 
 ### Example request
@@ -260,7 +257,7 @@ identical code runs locally under Uvicorn and in the cloud under Lambda.
 ```bash
 curl -X POST "$API_URL/predict" \
   -H "Content-Type: application/json" \
-  -d ''{
+  -d '{
     "RevolvingUtilizationOfUnsecuredLines": 0.95,
     "age": 24,
     "DebtRatio": 0.85,
@@ -271,7 +268,7 @@ curl -X POST "$API_URL/predict" \
     "NumberOfTime30-59DaysPastDueNotWorse": 2,
     "NumberOfTimes90DaysLate": 1,
     "NumberOfTime60-89DaysPastDueNotWorse": 1
-  }''
+  }'
 
 # -> {"default_probability": 0.6009, "prediction": 1}
 ```
@@ -282,8 +279,8 @@ interactive OpenAPI docs are served at `/docs`.
 
 ### Infrastructure as Code (Terraform)
 
-The entire cloud stack — ECR repository, Lambda function, IAM execution role,
-API Gateway, and the invoke permission — is defined declaratively in
+The entire cloud stack ï¿½ ECR repository, Lambda function, IAM execution role,
+API Gateway, and the invoke permission ï¿½ is defined declaratively in
 `main.tf`. The deployment is reproducible and disposable:
 
 ```bash
@@ -302,14 +299,14 @@ pipeline below.
 
 Every push to `main` triggers an automated deploy via GitHub Actions
 (`.github/workflows/deploy.yml`): the workflow builds the Docker image, pushes
-it to ECR, and updates the Lambda function code — with **no long-lived AWS
+it to ECR, and updates the Lambda function code ï¿½ with **no long-lived AWS
 credentials stored anywhere**.
 
 Authentication uses **GitHub OpenID Connect (OIDC) federation**: the workflow
 exchanges a short-lived, GitHub-signed token for temporary AWS credentials by
 assuming a scoped IAM role. That role is restricted by trust policy to this
-repository alone and granted least-privilege permissions — only ECR push and
-Lambda update on this project''s specific resources, nothing else in the
+repository alone and granted least-privilege permissions ï¿½ only ECR push and
+Lambda update on this project's specific resources, nothing else in the
 account. This is the keyless pattern that replaces stored access keys, and it
 eliminates the leaked-credential risk entirely.
 
@@ -324,3 +321,7 @@ eliminates the leaked-credential risk entirely.
 | Web framework      | FastAPI + Mangum (ASGI-to-Lambda adapter)          |
 | Infra provisioning | Terraform                                          |
 | CI/CD              | GitHub Actions with OIDC (keyless auth)            |
+
+## License
+
+MIT â€” see [LICENSE](LICENSE).
