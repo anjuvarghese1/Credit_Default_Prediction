@@ -211,3 +211,116 @@ credit-risk-pipeline/
 ## License
 
 MIT â€” see [LICENSE](LICENSE).
+---
+
+## Deployment: serverless inference on AWS
+
+The trained pipeline is deployed as a **serverless REST API** on AWS. The same
+`best_model.joblib` produced by the training run is served behind an HTTP
+endpoint that scores a single applicant on demand — with no server to manage
+and no idle cost, since the compute scales to zero between requests.
+
+### Architecture       
+                HTTPS request (JSON applicant)
+                          |
+                          v
+                +------------------+
+                |   API Gateway    |   public HTTP endpoint
+                |   (HTTP API)     |
+                +--------+---------+
+                         | invokes
+                         v
+                +------------------+
+                |   AWS Lambda     |   container image, scales to zero
+                |  (FastAPI +      |   loads model once per cold start
+                |   Mangum)        |
+                +--------+---------+
+                         | pulls image
+                         v
+                +------------------+
+                |   Amazon ECR     |   private container registry
+                +------------------+
+
+A thin **FastAPI** application (`app.py`) wraps the model, exposing two routes:
+
+| Method | Route      | Purpose                                                    |
+|--------|------------|------------------------------------------------------------|
+| `GET`  | `/health`  | Liveness check; confirms the model artifact is loaded.     |
+| `POST` | `/predict` | Scores one applicant, returns default probability + label. |
+
+Because the persisted artifact is a full sklearn `Pipeline`, the same
+leakage-safe preprocessing described above travels *with* the model into
+production — the API hands raw applicant fields straight to the pipeline, and
+imputation, winsorization, and scaling all apply exactly as they did in
+training. **Mangum** adapts the ASGI app to Lambda''s invocation model, so the
+identical code runs locally under Uvicorn and in the cloud under Lambda.
+
+### Example request
+
+```bash
+curl -X POST "$API_URL/predict" \
+  -H "Content-Type: application/json" \
+  -d ''{
+    "RevolvingUtilizationOfUnsecuredLines": 0.95,
+    "age": 24,
+    "DebtRatio": 0.85,
+    "MonthlyIncome": 2000,
+    "NumberOfOpenCreditLinesAndLoans": 3,
+    "NumberRealEstateLoansOrLines": 0,
+    "NumberOfDependents": 2,
+    "NumberOfTime30-59DaysPastDueNotWorse": 2,
+    "NumberOfTimes90DaysLate": 1,
+    "NumberOfTime60-89DaysPastDueNotWorse": 1
+  }''
+
+# -> {"default_probability": 0.6009, "prediction": 1}
+```
+
+A low-risk applicant (low utilization, older, no delinquencies) returns a
+probability near `0.03`; the high-risk profile above returns `~0.60`. The
+interactive OpenAPI docs are served at `/docs`.
+
+### Infrastructure as Code (Terraform)
+
+The entire cloud stack — ECR repository, Lambda function, IAM execution role,
+API Gateway, and the invoke permission — is defined declaratively in
+`main.tf`. The deployment is reproducible and disposable:
+
+```bash
+terraform init      # download the AWS provider
+terraform plan      # preview the resources to be created
+terraform apply     # provision the full stack
+terraform destroy   # tear everything down
+```
+
+Image build-and-push is kept as a separate step from infrastructure
+provisioning (the standard division of labour): Terraform manages
+*infrastructure*, while the container image is built and pushed by the CI
+pipeline below.
+
+### CI/CD (GitHub Actions + OIDC)
+
+Every push to `main` triggers an automated deploy via GitHub Actions
+(`.github/workflows/deploy.yml`): the workflow builds the Docker image, pushes
+it to ECR, and updates the Lambda function code — with **no long-lived AWS
+credentials stored anywhere**.
+
+Authentication uses **GitHub OpenID Connect (OIDC) federation**: the workflow
+exchanges a short-lived, GitHub-signed token for temporary AWS credentials by
+assuming a scoped IAM role. That role is restricted by trust policy to this
+repository alone and granted least-privilege permissions — only ECR push and
+Lambda update on this project''s specific resources, nothing else in the
+account. This is the keyless pattern that replaces stored access keys, and it
+eliminates the leaked-credential risk entirely.
+
+
+### Serving stack
+
+| Concern            | Choice                                             |
+|--------------------|----------------------------------------------------|
+| Compute            | AWS Lambda (container image, 1 GB, scales to zero) |
+| API layer          | Amazon API Gateway (HTTP API)                      |
+| Image registry     | Amazon ECR                                         |
+| Web framework      | FastAPI + Mangum (ASGI-to-Lambda adapter)          |
+| Infra provisioning | Terraform                                          |
+| CI/CD              | GitHub Actions with OIDC (keyless auth)            |
