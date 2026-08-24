@@ -1,0 +1,13 @@
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Local test artifacts
+predict_event.json
+predict_response.json
+response.json
+*.bak
+token.txt
