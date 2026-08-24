@@ -252,8 +252,6 @@ imputation, winsorization, and scaling all apply exactly as they did in
 training. **Mangum** adapts the ASGI app to Lambda's invocation model, so the
 identical code runs locally under Uvicorn and in the cloud under Lambda.
 
-![Interactive OpenAPI documentation](docs/api-docs.png)
-
 ### Example request
 
 ```bash
@@ -274,6 +272,8 @@ curl -X POST "$API_URL/predict" \
 
 # -> {"default_probability": 0.6009, "prediction": 1}
 ```
+
+![Interactive OpenAPI documentation](docs/api-docs.png)
 
 A low-risk applicant (low utilization, older, no delinquencies) returns a
 probability near `0.03`; the high-risk profile above returns `~0.60`. The
